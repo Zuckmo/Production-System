@@ -83,7 +83,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── DATA LOADING AND PREPROCESSING ───────────────────────────────────────
-@st.cache_data(showspinner="Loading data ...")
+@st.cache_data(show_spinner="Loading data...")
 def load_and_preprocess():
     url = "https://raw.githubusercontent.com/Zuckmo/Production-System/refs/heads/main/production_data_processed.csv"
     df = pd.read_csv(url)
