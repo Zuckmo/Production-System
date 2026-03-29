@@ -164,7 +164,7 @@ pages = [
     "🌡️ Temperature Impact Analysis",
     "⚠️ Defect & Quality Analysis",
     "🚦 Bottleneck Analysis",
-    "🧬 Predictive Modeling",
+  
 ]
 page = st.sidebar.radio("Navigation", pages)
 
@@ -176,7 +176,7 @@ st.sidebar.caption(f"Dataset rows: **{len(df):,}** | Columns: **{df.shape[1]}**"
 # ══════════════════════════════════════════════════════════════════════════════
 if page == "📊 Overview & Dataset":
     st.title("🏭 Industrial Production Systems Dashboard")
-    st.markdown("Analisis komprehensif data produksi industri — dari sensor mesin hingga prediksi kegagalan.")
+    st.markdown("comprehensive analysis of industrial production data.")
 
     # KPI row
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -204,10 +204,21 @@ if page == "📊 Overview & Dataset":
     st.markdown('<div class="section-header">📋 Dataset Description</div>', unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(["Head", "Describe", "Info"])
+
     with tab1:
-        st.dataframe(df.head(20), use_container_width=True)
+        df_head = df.head(20)
+        # bersihkan df_head
+        for col in df_head.columns:
+            if pd.api.types.is_datetime64_any_dtype(df_head[col]) or pd.api.types.is_object_dtype(df_head[col]):
+                df_head[col] = df_head[col].astype(str)
+        st.dataframe(df_head, width='stretch')
+
     with tab2:
-        st.dataframe(df.describe().T.style.background_gradient(cmap='Blues'), use_container_width=True)
+        df_desc = df.describe().T.style.background_gradient(cmap='Blues')
+        # biasanya describe() cuma numeric, tapi kalau mau aman bisa cast numeric ke str:
+        # df_desc = df.describe().T.astype(str).style.background_gradient(cmap='Blues')
+        st.dataframe(df_desc, width='stretch')
+
     with tab3:
         info_df = pd.DataFrame({
             "Column": df.columns,
@@ -216,7 +227,11 @@ if page == "📊 Overview & Dataset":
             "Null": df.isnull().sum().values,
             "Unique": df.nunique().values
         })
-        st.dataframe(info_df, use_container_width=True)
+        # bersihkan info_df
+        for col in info_df.columns:
+            if pd.api.types.is_datetime64_any_dtype(info_df[col]) or pd.api.types.is_object_dtype(info_df[col]):
+                info_df[col] = info_df[col].astype(str)
+        st.dataframe(info_df, width='stretch')
 
     st.markdown("---")
     st.markdown('<div class="section-header">🔢 Categorical Value Counts</div>', unsafe_allow_html=True)
@@ -228,7 +243,7 @@ if page == "📊 Overview & Dataset":
     sns.barplot(data=vc, x=sel, y="count", palette="viridis", ax=ax)
     ax.set_title(f"Value Counts: {sel}")
     ax.tick_params(axis='x', rotation=30)
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width='stretch')
     plt.close(fig)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -247,7 +262,7 @@ elif page == "🔍 Exploratory Data Analysis":
     tab1, tab2, tab3 = st.tabs(["📦 Boxplots", "🔥 Correlation Matrix", "📉 Distributions"])
 
     with tab1:
-        st.markdown("#### Boxplots — Deteksi Outlier (setelah Winsorization)")
+        st.markdown("#### Boxplots — Outliers Detection  (after Winsorization)")
         n_cols = 3
         n_rows = int(np.ceil(len(numeric_cols) / n_cols))
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4*n_rows))
@@ -259,7 +274,7 @@ elif page == "🔍 Exploratory Data Analysis":
         for j in range(i+1, len(axes)):
             fig.delaxes(axes[j])
         plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
     with tab2:
@@ -269,25 +284,25 @@ elif page == "🔍 Exploratory Data Analysis":
         sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f",
                     linewidths=.5, ax=ax, annot_kws={"size": 7})
         ax.set_title("Correlation Matrix of Industrial Sensor Data")
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
         st.markdown("""
         <div class="insight-box">
-        <b>💡 Key Correlations:</b><br>
-        • <b>machine_age_hours ↔ oil_level (0.65)</b> — Terkuat: Mesin lebih tua membutuhkan lebih banyak pelumas<br>
-        • <b>error_rate</b> berkorelasi moderat dengan vibration_level (0.34), power_consumption (0.34), temperature (0.25)<br>
-        • pressure, material_flow_rate, cycle_time menunjukkan korelasi lemah — kemungkinan fitur independen
+        <b> Key Correlations:</b><br>
+        • <b>machine_age_hours ↔ oil_level (0.65)</b> — the Strongest: Older machines require more lubrication<br>
+        • <b>error_rate</b> moderate correlation with vibration_level (0.34), power_consumption (0.34), temperature (0.25)<br>
+        • pressure, material_flow_rate, cycle_time showing weak correlation — likely independent features
         </div>""", unsafe_allow_html=True)
 
     with tab3:
-        sel_col = st.selectbox("Pilih kolom untuk distribusi", numeric_cols, key="dist_sel")
+        sel_col = st.selectbox("choose column for distribution", numeric_cols, key="dist_sel")
         fig, ax = plt.subplots(figsize=(9, 4))
         sns.histplot(df[sel_col], kde=True, bins=30, color='steelblue', ax=ax)
         ax.set_title(f"Distribution of {sel_col.replace('_',' ').title()}")
         ax.set_xlabel(sel_col.replace('_',' ').title())
         ax.set_ylabel("Frequency")
         ax.grid(True, linestyle='--', alpha=0.5)
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -329,7 +344,7 @@ elif page == "📈 KPI & Performance Metrics":
             sns.barplot(data=avg_machine, x='machine_id', y='cycle_time', palette='Blues_d', ax=ax)
             ax.set_title("Avg Cycle Time per Machine")
             ax.set_ylabel("Seconds")
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
         with col_b:
             avg_shift = df.groupby('shift')['cycle_time'].mean().reset_index()
@@ -337,7 +352,7 @@ elif page == "📈 KPI & Performance Metrics":
             sns.barplot(data=avg_shift, x='shift', y='cycle_time', palette='Greens_d', ax=ax)
             ax.set_title("Avg Cycle Time per Shift")
             ax.tick_params(axis='x', rotation=25)
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
 
     with tab2:
@@ -351,18 +366,18 @@ elif page == "📈 KPI & Performance Metrics":
             sns.barplot(data=dt_total, x='machine_id', y='downtime', palette='Reds_d', ax=ax)
             ax.set_title("Total Downtime per Machine")
             ax.set_ylabel("Minutes")
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
         with col_b:
             fig, ax = plt.subplots(figsize=(6,4))
             sns.barplot(data=dt_freq, x='machine_id', y='frequency', palette='Oranges_d', ax=ax)
             ax.set_title("Downtime Frequency per Machine")
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
 
         st.markdown("""
         <div class="insight-box">
-        ⚠️ <b>M001</b> memiliki total downtime tertinggi dan frekuensi downtime terbanyak — mesin paling bermasalah.
+         <b>M001</b> has the highest total downtime and downtime frequency — the most problematic machine.
         </div>""", unsafe_allow_html=True)
 
     with tab3:
@@ -371,7 +386,7 @@ elif page == "📈 KPI & Performance Metrics":
         sns.barplot(data=err_op, x='operator_id', y='error_rate', palette='rocket', ax=ax)
         ax.set_title("Total Error Rate per Operator")
         ax.tick_params(axis='x', rotation=45)
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
         # Defect % per operator
@@ -380,7 +395,7 @@ elif page == "📈 KPI & Performance Metrics":
             total_defects=('defect_count','sum')
         )
         def_op['defect_pct'] = (def_op['total_defects'] / def_op['total_units']).fillna(0)*100
-        st.dataframe(def_op.sort_values('defect_pct', ascending=False).round(2), use_container_width=True)
+        st.dataframe(def_op.sort_values('defect_pct', ascending=False).round(2), use_container_width='stretch')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE 4 — MACHINE CLUSTERING
@@ -407,20 +422,31 @@ elif page == "🤖 Machine Condition Clustering":
         ax.set_ylabel("Principal Component 2")
         ax.legend(fontsize=8)
         ax.grid(True, linestyle='--', alpha=0.4)
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
         st.markdown("""
         <div class="insight-box">
         <b>Interpretasi Kluster:</b><br>
-        🔴 <b>Cluster 0 – Degraded/Critical</b>: Temperatur tinggi (~86°C), vibrasi tinggi, error_rate ~0.98. Perlu perhatian segera.<br>
-        🔵 <b>Cluster 1 – Moderate, Low Oil</b>: Mesin lebih muda, oil_level rendah (~56%). Risiko keausan akselerasi.<br>
-        🟢 <b>Cluster 2 – Older, Stable, Healthy</b>: Mesin tertua tapi well-maintained, oil_level tinggi (~79%).
+        🔴 <b>Cluster 0 – Degraded/Critical</b>: high temperature (~86°C), high vibration, error_rate ~0.98. Immediate attention needed.<br>
+        🔵 <b>Cluster 1 – Moderate, Low Oil</b>: younger machines, low oil_level (~56%). Risk of accelerated wear.<br>
+        🟢 <b>Cluster 2 – Older, Stable, Healthy</b>: oldest machines but well-maintained, high oil_level (~79%).
         </div>""", unsafe_allow_html=True)
 
     with tab2:
         centroids = df.groupby('cluster_efficiency_machine')[clustering_features].mean().round(2)
-        st.dataframe(centroids.T.style.background_gradient(cmap='RdYlGn', axis=1), use_container_width=True)
+
+        # --- bersihkan semua kolom supaya Streamlit aman ---
+        centroids_clean = centroids.copy()
+        for col in centroids_clean.columns:
+            if pd.api.types.is_datetime64_any_dtype(centroids_clean[col]) or pd.api.types.is_object_dtype(centroids_clean[col]):
+                centroids_clean[col] = centroids_clean[col].astype(str)
+        # -------------------------------------------------------
+
+        st.dataframe(
+            centroids_clean.T.style.background_gradient(cmap='RdYlGn', axis=1),
+            width='stretch'
+        )
 
         # Distribution count
         cluster_counts = df['cluster_efficiency_machine'].value_counts().sort_index().reset_index()
@@ -435,11 +461,11 @@ elif page == "🤖 Machine Condition Clustering":
         ax.bar(cluster_counts['Cluster'], cluster_counts['Count'], color=colors)
         ax.set_title("Distribusi Kluster Mesin")
         ax.set_ylabel("Jumlah Observasi")
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
     with tab3:
-        st.markdown("#### Evaluasi Jumlah Kluster Optimal")
+        st.markdown("#### evaluation the number of optimal clusters (k) using Elbow Method, Silhouette Score, and Davies-Bouldin Index")
         inertia_list, sil_list, db_list = [], [], []
         k_range = range(2, 10)
         for k in k_range:
@@ -454,7 +480,7 @@ elif page == "🤖 Machine Condition Clustering":
         axes[1].plot(k_range, sil_list, 'o-', color='green'); axes[1].set_title("Silhouette Score"); axes[1].set_xlabel("k"); axes[1].grid(True)
         axes[2].plot(k_range, db_list, 'o-', color='red'); axes[2].set_title("Davies-Bouldin Index"); axes[2].set_xlabel("k"); axes[2].grid(True)
         plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -492,7 +518,18 @@ elif page == "⏱️ Shift Efficiency Clustering":
     col_a, col_b = st.columns(2)
     with col_a:
         st.markdown("#### Cluster Centroids (Original Values)")
-        st.dataframe(centroids_shift.T.style.background_gradient(cmap='Blues', axis=1), use_container_width=True)
+
+        # --- bersihkan centroids_shift supaya Streamlit aman ---
+        centroids_shift_clean = centroids_shift.copy()
+        for col in centroids_shift_clean.columns:
+            if pd.api.types.is_datetime64_any_dtype(centroids_shift_clean[col]) or pd.api.types.is_object_dtype(centroids_shift_clean[col]):
+                centroids_shift_clean[col] = centroids_shift_clean[col].astype(str)
+        # -------------------------------------------------------
+
+        st.dataframe(
+            centroids_shift_clean.T.style.background_gradient(cmap='Blues', axis=1),
+            width='stretch'
+        )
     with col_b:
         cnt = grouped['shift_efficiency_cluster'].value_counts().sort_index().reset_index()
         cnt.columns = ['Cluster','Count']
@@ -500,14 +537,14 @@ elif page == "⏱️ Shift Efficiency Clustering":
         fig, ax = plt.subplots(figsize=(5,4))
         ax.bar(cnt['Cluster'], cnt['Count'], color=['#2ecc71','#e74c3c'])
         ax.set_title("Distribusi Kluster Shift")
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
     st.markdown("""
     <div class="insight-box">
     <b>Interpretasi:</b><br>
-    🟢 <b>Cluster 0 – Higher Efficiency</b>: Produksi ~33 unit/shift, downtime lebih tinggi namun output jauh lebih besar<br>
-    🔴 <b>Cluster 1 – Lower Efficiency</b>: Produksi ~14 unit/shift, error rate sedikit lebih tinggi meski downtime lebih rendah
+    🟢 <b>Cluster 0 – Higher Efficiency</b>: production ~33 units/shift, higher downtime but higher output <br>
+    🔴 <b>Cluster 1 – Lower Efficiency</b>: production ~14 units/shift, slightly higher error rate despite lower downtime
     </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -523,7 +560,7 @@ elif page == "⏱️ Shift Efficiency Clustering":
         axes[cid].set_title(f"Cluster {cid}: {label} — Shift Distribution")
         axes[cid].tick_params(axis='x', rotation=20)
     plt.tight_layout()
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width='stretch')
     plt.close(fig)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -547,10 +584,16 @@ elif page == "🌡️ Temperature Impact Analysis":
         s: d[metrics].mean() for s, d in zip(scenarios, data_scenarios)
     }).T.round(3)
 
+    # --- bersihkan semua kolom supaya Streamlit aman ---
+    for col in summary.columns:
+        if pd.api.types.is_datetime64_any_dtype(summary[col]) or pd.api.types.is_object_dtype(summary[col]):
+            summary[col] = summary[col].astype(str)
+    # -------------------------------------------------------
+
     col_a, col_b = st.columns([1,1.5])
     with col_a:
         st.markdown(f"**Threshold:** Q1={Q1_t:.1f}°C | Q3={Q3_t:.1f}°C")
-        st.dataframe(summary.style.background_gradient(cmap='coolwarm'), use_container_width=True)
+        st.dataframe(summary.style.background_gradient(cmap='coolwarm'), use_container_width='stretch')
 
     with col_b:
         corr_f = ['temperature','power_consumption','error_rate','downtime','units_produced']
@@ -561,7 +604,7 @@ elif page == "🌡️ Temperature Impact Analysis":
         ax.axvline(0, color='black', linewidth=0.8)
         ax.set_title("Correlation with Temperature")
         ax.set_xlabel("Pearson r")
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
     st.markdown("---")
@@ -575,13 +618,13 @@ elif page == "🌡️ Temperature Impact Analysis":
         axes[i].set_ylabel("Average Value")
         axes[i].tick_params(axis='x', rotation=20)
     plt.tight_layout()
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width='stretch')
     plt.close(fig)
 
     st.markdown("""
     <div class="insight-box">
-    <b>💡 Findings:</b> Temperatur tinggi → power consumption naik, error rate naik, units produced turun.
-    Pertahankan temperatur operasi di bawah Q3 untuk efisiensi optimal.
+    <b> Findings:</b> high temperature → power consumption increases, error rate increases, units produced decreases.
+    Maintain operating temperature below Q3 for optimal efficiency.
     </div>""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -609,7 +652,7 @@ elif page == "⚠️ Defect & Quality Analysis":
                    colors=['#66b3ff','#ff9999'], autopct='%1.1f%%',
                    explode=(0.05,0), shadow=True, startangle=140)
             ax.set_title("Good vs Defective Units")
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
         with col_b:
             dc_prod = df.groupby('product_type')['defect_count'].sum()
@@ -617,7 +660,7 @@ elif page == "⚠️ Defect & Quality Analysis":
             ax.pie(dc_prod.values, labels=dc_prod.index, autopct='%1.1f%%',
                    startangle=90, colors=sns.color_palette('viridis', len(dc_prod)))
             ax.set_title("Defect % per Product Type")
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, use_container_width='stretch')
             plt.close(fig)
             
 
@@ -630,7 +673,7 @@ elif page == "⚠️ Defect & Quality Analysis":
         ax.set_title(f"Average Defect Rate by {cat_choice.replace('_',' ').title()}")
         ax.set_ylabel("Avg Defect Count")
         ax.tick_params(axis='x', rotation=30)
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
     with tab3:
@@ -641,7 +684,7 @@ elif page == "⚠️ Defect & Quality Analysis":
         ax.bar(dr_cluster['Cluster'], dr_cluster['defect_count'], color=['#e74c3c','#3498db','#2ecc71'])
         ax.set_title("Avg Defect Rate by Machine Condition Cluster")
         ax.set_ylabel("Avg Defect Count")
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, use_container_width='stretch')
         plt.close(fig)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -655,6 +698,7 @@ elif page == "🚦 Bottleneck Analysis":
     avg_err_line   = df.groupby('line_id')['error_rate'].mean()
     total_up_line  = df.groupby('line_id')['units_produced'].sum()
 
+
     # Summary table
     bottleneck_df = pd.DataFrame({
         'Total Downtime': total_dt_line,
@@ -662,8 +706,11 @@ elif page == "🚦 Bottleneck Analysis":
         'Avg Error Rate': avg_err_line.round(3),
         'Total Units': total_up_line
     })
+    
+
+
     st.dataframe(bottleneck_df.style.background_gradient(cmap='Reds', subset=['Total Downtime','Downtime Freq'])
-                               .background_gradient(cmap='Greens', subset=['Total Units']), use_container_width=True)
+                               .background_gradient(cmap='Greens', subset=['Total Units']), use_container_width='stretch')
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
     axes = axes.flatten()
@@ -681,14 +728,15 @@ elif page == "🚦 Bottleneck Analysis":
         ax.set_ylabel(ylabel)
 
     plt.tight_layout()
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width='stretch')
     plt.close(fig)
 
     st.markdown("""
     <div class="insight-box">
-    <b>⚡ Bottleneck Findings:</b><br>
-    1. <b>Machine M001</b> — Downtime tertinggi (25,861 min) & frekuensi terbanyak (960 kejadian) → prioritas maintenance<br>
-    2. <b>Cluster 1 (Lower Efficiency Shifts)</b> — Produksi 14 unit/shift vs 33 unit/shift, error rate lebih tinggi meski downtime rendah → perlu investigasi proses
+    <b> Bottleneck Findings:</b><br>
+    1. <b>Machine M001</b> — the highest Downtime (25,861 min) & highest frequency (960 occurrences) → maintenance priority<br>
+    2. <b>Cluster 1 (Lower Efficiency Shifts)</b> — Production 14 units/shift vs 33 units/shift, higher error rate despite lower downtime → need process investigation<br>
+    3. <b>Line L003</b> — highest downtime and error rate, lowest production → potential bottleneck line requiring urgent attention
     </div>""", unsafe_allow_html=True)
 
 
