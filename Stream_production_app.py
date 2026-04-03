@@ -164,6 +164,7 @@ pages = [
     "🌡️ Temperature Impact Analysis",
     "⚠️ Defect & Quality Analysis",
     "🚦 Bottleneck Analysis",
+    "⚙️ Process Optimization Simulator",
   
 ]
 page = st.sidebar.radio("Navigation", pages)
@@ -740,6 +741,108 @@ elif page == "🚦 Bottleneck Analysis":
     </div>""", unsafe_allow_html=True)
 
 
-# ─── FOOTER ─────────────────────────────────────────────────────────────────
+    
+# ══════════════════════════════════════════════════════════════════════════════
+# PAGE 9 — PROCESS OPTIMIZATION SIMULATOR
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "⚙️ Process Optimization Simulator":
+    st.title("⚙️ Process Optimization Simulator")
+
+    st.markdown("Simulasi dampak perubahan parameter proses terhadap output produksi")
+
+    # =========================
+    # SELECT TARGET
+    # =========================
+    target = st.selectbox("Pilih Target Optimisasi", 
+                          ["units_produced", "defect_count", "downtime"])
+
+    features = [
+        "temperature","vibration_level","power_consumption","pressure",
+        "material_flow_rate","cycle_time","error_rate",
+        "machine_age_hours","oil_level","humidity","noise_level_db"
+    ]
+
+    X = df[features]
+    y = df[target]
+
+    # =========================
+    # TRAIN MODEL
+    # =========================
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+
+    # convert regression-like target ke classification sederhana
+    y_bin = pd.qcut(y, q=3, labels=[0,1,2])  # low, medium, high
+
+    model.fit(X, y_bin)
+
+    # =========================
+    # FEATURE IMPORTANCE
+    # =========================
+    importance = pd.DataFrame({
+        "feature": features,
+        "importance": model.feature_importances_
+    }).sort_values(by="importance", ascending=False)
+
+    st.markdown("### 🔍 Faktor Paling Berpengaruh")
+    st.dataframe(importance, use_container_width=True)
+
+    # =========================
+    # SIMULATION INPUT
+    # =========================
+    st.markdown("### 🎛️ Simulasi Perubahan Parameter")
+
+    sim_inputs = {}
+    for f in features:
+        sim_inputs[f] = st.slider(
+            f,
+            float(df[f].min()),
+            float(df[f].max()),
+            float(df[f].mean())
+        )
+
+    sim_df = pd.DataFrame([sim_inputs])
+
+    # =========================
+    # PREDICTION
+    # =========================
+    pred = model.predict(sim_df)[0]
+
+    st.markdown("### 📊 Hasil Simulasi")
+    label_map = {0:"Low",1:"Medium",2:"High"}
+    st.metric("Predicted Level", label_map[pred])
+
+    # =========================
+    # WHAT-IF ANALYSIS
+    # =========================
+    st.markdown("### 🔄 Dampak Perubahan Variabel")
+
+    impact_results = []
+
+    for f in features:
+        temp_input = sim_df.copy()
+        temp_input[f] *= 1.1  # naik 10%
+
+        pred_new = model.predict(temp_input)[0]
+
+        impact_results.append({
+            "Variable": f,
+            "Original": label_map[pred],
+            "After +10%": label_map[pred_new]
+        })
+
+    impact_df = pd.DataFrame(impact_results)
+
+    st.dataframe(impact_df, use_container_width=True)
+
+    st.markdown("""
+    <div class="insight-box">
+    💡 <b>Interpretasi:</b><br>
+    • Variabel yang mengubah prediksi saat dinaikkan → paling sensitif<br>
+    • Fokus optimisasi: turunkan error_rate, stabilkan temperature, dan minimalkan cycle_time<br>
+    </div>
+    """, unsafe_allow_html=True)
+    
+
+# ─── FOOTER ─────────────────────────────────────────────────────────────3────
 st.markdown("---")
 st.caption("🏭 Industrial Production Systems Dashboard | Data: production_data_processed.csv")
